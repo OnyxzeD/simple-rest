@@ -11,15 +11,35 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // create data
 app.post('/api/users', (req, res) => {
     const data = { ...req.body };
+    const querySearch = 'SELECT * FROM chat_users WHERE device_id = ?';
     const querySql = 'INSERT INTO chat_users SET ?';
+    const queryUpdate = 'UPDATE chat_users SET ? WHERE id = ?';
 
-    connection.query(querySql, data, (err, rows, field) => {
+    connection.query(querySearch, data.device_id, (err, rows, field) => {
         // error handling
         if (err) {
-            return res.status(500).json({ message: 'failed to insert data!', error: err });
+            return res.status(500).json({ message: 'Ada kesalahan', error: err });
         }
 
-        return res.status(201).json({ success: true, message: 'request success!' });
+        if (rows.length) {
+            connection.query(queryUpdate, [data, rows[0].id], (err, rows, field) => {
+                // error handling
+                if (err) {
+                    return res.status(500).json({ message: 'Something gone wrong', error: err });
+                }
+
+                return res.status(200).json({ success: true, message: 'update success!' });
+            });
+        } else {
+            connection.query(querySql, data, (err, rows, field) => {
+                // error handling
+                if (err) {
+                    return res.status(500).json({ message: 'failed to insert data!', error: err });
+                }
+
+                return res.status(201).json({ success: true, message: 'insert success!' });
+            });
+        }
     });
 });
 
@@ -43,7 +63,7 @@ app.get('/api/users/:id', (req, res) => {
 
     connection.query(querySearch, req.params.id, (err, rows, field) => {
         if (rows.length) {
-			return res.status(200).json({ success: true, data: rows });
+            return res.status(200).json({ success: true, data: rows });
         } else {
             return res.status(404).json({ message: 'Data not found!', success: false });
         }
@@ -59,7 +79,7 @@ app.put('/api/users/:id', (req, res) => {
     connection.query(querySearch, req.params.id, (err, rows, field) => {
         // error handling
         if (err) {
-            return res.status(500).json({ message: 'Ada kesalahan', error: err });
+            return res.status(500).json({ message: 'Something gone wrong', error: err });
         }
 
         if (rows.length) {
